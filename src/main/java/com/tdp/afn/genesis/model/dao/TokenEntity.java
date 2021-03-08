@@ -2,11 +2,14 @@ package com.tdp.afn.genesis.model.dao;
 
 import com.microsoft.azure.functions.annotation.BindingName;
 import com.microsoft.azure.functions.annotation.CustomBinding;
+import com.microsoft.azure.storage.table.TableServiceEntity;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
  * Class: TokenEntity. <br/>
@@ -25,15 +28,15 @@ import lombok.NoArgsConstructor;
  *         </ul>
  * @version 1.0
  */
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
-@AllArgsConstructor
-@EqualsAndHashCode(callSuper = false)
-public class Token {
-
-    private String PartitionKey;
-    private String RowKey;
+public class TokenEntity extends TableServiceEntity{
     private String AccessToken;
     private String RefreshToken;
 
+    public TokenEntity(String partitionKey, String rowKey) {
+      this.partitionKey = partitionKey;
+      this.rowKey = rowKey;
+    }
 }

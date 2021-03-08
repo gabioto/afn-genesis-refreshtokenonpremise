@@ -7,7 +7,6 @@ import static org.mockito.Mockito.mock;
 import java.util.logging.Logger;
 
 import com.microsoft.azure.functions.ExecutionContext;
-import com.tdp.afn.genesis.model.dao.Token;
 
 import org.junit.jupiter.api.Test;
 
@@ -24,10 +23,8 @@ public class FunctionTest {
         final ExecutionContext context = mock(ExecutionContext.class);
         doReturn(Logger.getGlobal()).when(context).getLogger();
 
-        //Token token = new Token("access", "refresh");
-
         // Invoke
-        final String ret = new Function().run(null, null, context);
+        final String ret = new Function().run(null, /*null,*/ context);
 
         // Verify
         assertEquals(ret, "OK");
