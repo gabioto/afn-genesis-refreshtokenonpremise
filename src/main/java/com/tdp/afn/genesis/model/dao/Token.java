@@ -31,6 +31,8 @@ import lombok.NoArgsConstructor;
 @EqualsAndHashCode(callSuper = false)
 public class Token {
 
+    private String PartitionKey;
+    private String RowKey;
     private String AccessToken;
     private String RefreshToken;
 

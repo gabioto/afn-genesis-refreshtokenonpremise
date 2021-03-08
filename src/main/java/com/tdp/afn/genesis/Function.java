@@ -1,8 +1,10 @@
 package com.tdp.afn.genesis;
 
 import com.microsoft.azure.functions.ExecutionContext;
+import com.microsoft.azure.functions.OutputBinding;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.TableInput;
+import com.microsoft.azure.functions.annotation.TableOutput;
 import com.microsoft.azure.functions.annotation.TimerTrigger;
 import com.tdp.afn.genesis.model.dao.Token;
 import com.tdp.afn.genesis.util.Constants;
@@ -25,8 +27,10 @@ public class Function {
             List<Token> tokenList = tokens.get();
             tokenList.parallelStream()
                     .forEach(t -> {
-                        context.getLogger().info("Info Token -> access_token: " + t.getAccessToken() 
-                                + " - refresh_token: " + t.getRefreshToken());
+                        context.getLogger().info("Info Token -> PartitionKey: " + t.getPartitionKey()
+                                + " - RowKey: " + t.getAccessToken() 
+                                + " - AccessToken: " + t.getAccessToken() 
+                                + " - RefreshToken: " + t.getRefreshToken());
                     });
         } else {
             context.getLogger().warning("Token table is empty");
