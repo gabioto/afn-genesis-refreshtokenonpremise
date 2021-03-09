@@ -61,11 +61,11 @@ public class Function {
                         try {
                             cloudTable.execute(replaceEntity);
                         } catch (StorageException e) {
-                            context.getLogger().warning(e.getMessage());
+                            context.getLogger().warning("Error replacing table entity: " + e.getMessage());
                         }
                     });
         } catch (InvalidKeyException | URISyntaxException | StorageException e) {
-            context.getLogger().warning(e.getMessage());
+            context.getLogger().warning("Error processing tokens: " + e.getMessage());
             return Constants.MESSAGE_ERROR;
         }
         return Constants.MESSAGE_OK;
