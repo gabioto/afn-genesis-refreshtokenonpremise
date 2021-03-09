@@ -7,6 +7,7 @@ import com.microsoft.azure.storage.CloudStorageAccount;
 import com.microsoft.azure.storage.StorageException;
 import com.microsoft.azure.storage.table.CloudTable;
 import com.microsoft.azure.storage.table.CloudTableClient;
+import com.microsoft.azure.storage.table.TableOperation;
 import com.microsoft.azure.storage.table.TableQuery;
 import com.tdp.afn.genesis.model.dao.TokenEntity;
 import com.tdp.afn.genesis.util.Constants;
@@ -52,6 +53,16 @@ public class Function {
                                         + " - RowKey: " + t.getAccessToken()
                                         + " - AccessToken: " + t.getAccessToken()
                                         + " - RefreshToken: " + t.getRefreshToken());
+
+                        // Create an operation to replace the entity.
+                        TableOperation replaceEntity = TableOperation.replace(t);
+
+                        // Submit the operation to the table service.
+                        try {
+                            cloudTable.execute(replaceEntity);
+                        } catch (StorageException e) {
+                            context.getLogger().warning(e.getMessage());
+                        }
                     });
         } catch (InvalidKeyException | URISyntaxException | StorageException e) {
             context.getLogger().warning(e.getMessage());
