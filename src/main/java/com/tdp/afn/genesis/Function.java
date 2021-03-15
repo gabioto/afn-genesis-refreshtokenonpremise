@@ -21,14 +21,22 @@ import java.util.stream.StreamSupport;
  * Azure Functions with Time Trigger.
  */
 public class Function {
+    private String baseUrl;
+    private String storageConnectionString;
+
+    public Function() {
+        this.baseUrl = null;
+        this.storageConnectionString = null;
+    }
+
     @FunctionName("refreshtokenonpremise")
     public String run(@TimerTrigger(name = "keepAliveTrigger", schedule = "0 */2 * * * *") String timerInfo,
             final ExecutionContext context) {
         context.getLogger().info("Java Timer trigger function executed at:" + LocalDateTime.now().toString());
 
-        String storageConnectionString = System.getenv("StorageConnection");
-        if (storageConnectionString == null) {
-            context.getLogger().warning("StorageConnection not defined");
+        this.getenv();
+        if (storageConnectionString == null || baseUrl == null) {
+            context.getLogger().warning("Setting is not complete");
             return Constants.MESSAGE_ERROR;
         }
 
@@ -47,9 +55,17 @@ public class Function {
 
             // Loop through the results, displaying information about the entity.
             StreamSupport.stream(cloudTable.execute(partitionQuery).spliterator(), true)
+                    .map(t -> {
+                        context.getLogger()
+                                .info("Old Token -> PartitionKey: " + t.getPartitionKey()
+                                        + " - RowKey: " + t.getAccessToken()
+                                        + " - AccessToken: " + t.getAccessToken()
+                                        + " - RefreshToken: " + t.getRefreshToken());
+                        return getNewRefreshToken(t);
+                    })
                     .forEach(t -> {
                         context.getLogger()
-                                .info("Info Token -> PartitionKey: " + t.getPartitionKey()
+                                .info("New Token -> PartitionKey: " + t.getPartitionKey()
                                         + " - RowKey: " + t.getAccessToken()
                                         + " - AccessToken: " + t.getAccessToken()
                                         + " - RefreshToken: " + t.getRefreshToken());
@@ -57,8 +73,8 @@ public class Function {
                         // Create an operation to replace the entity.
                         TableOperation replaceEntity = TableOperation.replace(t);
 
-                        // Submit the operation to the table service.
                         try {
+                            // Submit the operation to the table service.
                             cloudTable.execute(replaceEntity);
                         } catch (StorageException e) {
                             context.getLogger().warning("Error replacing table entity: " + e.getMessage());
@@ -69,5 +85,14 @@ public class Function {
             return Constants.MESSAGE_ERROR;
         }
         return Constants.MESSAGE_OK;
+    }
+
+    private void getenv() {
+        this.baseUrl = System.getenv("OnPremiseUrl");
+        this.storageConnectionString = System.getenv("StorageConnection");
+    }
+
+    private TokenEntity getNewRefreshToken(TokenEntity tokenEntity) {
+        return tokenEntity;
     }
 }
