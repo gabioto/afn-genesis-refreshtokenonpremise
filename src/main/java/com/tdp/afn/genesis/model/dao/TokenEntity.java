@@ -1,12 +1,6 @@
 package com.tdp.afn.genesis.model.dao;
 
-import com.microsoft.azure.functions.annotation.BindingName;
-import com.microsoft.azure.functions.annotation.CustomBinding;
 import com.microsoft.azure.storage.table.TableServiceEntity;
-
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;

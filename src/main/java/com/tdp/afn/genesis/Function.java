@@ -11,7 +11,6 @@ import com.microsoft.azure.storage.table.TableOperation;
 import com.microsoft.azure.storage.table.TableQuery;
 import com.tdp.afn.genesis.model.dao.TokenEntity;
 import com.tdp.afn.genesis.util.Constants;
-
 import java.net.URISyntaxException;
 import java.security.InvalidKeyException;
 import java.time.LocalDateTime;
@@ -22,16 +21,19 @@ import java.util.stream.StreamSupport;
  */
 public class Function {
     private String baseUrl;
+    private ExecutionContext context;
     private String storageConnectionString;
 
     public Function() {
         this.baseUrl = null;
+        this.context = null;
         this.storageConnectionString = null;
     }
 
     @FunctionName("refreshtokenonpremise")
     public String run(@TimerTrigger(name = "keepAliveTrigger", schedule = "0 */2 * * * *") String timerInfo,
             final ExecutionContext context) {
+        this.context = context;
         context.getLogger().info("Java Timer trigger function executed at:" + LocalDateTime.now().toString());
 
         this.getenv();
@@ -93,6 +95,7 @@ public class Function {
     }
 
     private TokenEntity getNewRefreshToken(TokenEntity tokenEntity) {
+        this.context.getLogger().info("Request al API del refresh token");
         return tokenEntity;
     }
 }

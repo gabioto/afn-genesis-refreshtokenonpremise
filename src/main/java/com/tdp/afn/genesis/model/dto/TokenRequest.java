@@ -28,18 +28,11 @@ import lombok.ToString;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class TokenResponse {
-    @JsonProperty("token_type")
-    private String tokenType;
-    @JsonProperty("access_token")
-    private String accessToken;
-    @JsonProperty("expires_in")
-    private Long expiresIn;
-    @JsonProperty("consented_on")
-    private Long consentedOn;
-    private String scope;
+public class TokenRequest {
+    @JsonProperty("client_id")
+    String clientId;
+    @JsonProperty("grant_type")
+    String grantType;
     @JsonProperty("refresh_token")
-    private String refreshToken;
-    @JsonProperty("refresh_token_expires_in")
-    private Long refreshTokenExpiresin;
+    String refreshToken;
 }

@@ -34,6 +34,18 @@
             <version>${azure-storage.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>io.projectreactor.netty</groupId>
+            <artifactId>reactor-netty</artifactId>
+            <version>1.0.4</version>
+        </dependency>
+
+        <!--<dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-web</artifactId>
+            <version>5.3.4</version>
+        </dependency>-->
+
         <!-- Provide Scope -->
         <dependency>
             <groupId>org.projectlombok</groupId>
