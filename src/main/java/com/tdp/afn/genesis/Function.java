@@ -15,22 +15,23 @@ import com.tdp.afn.genesis.model.dto.TokenResponse;
 import com.tdp.afn.genesis.rest.RestClient;
 import com.tdp.afn.genesis.rest.impl.RestClientImpl;
 import com.tdp.afn.genesis.util.Constants;
-
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.web.client.RestClientException;
-
 import java.net.URISyntaxException;
 import java.security.InvalidKeyException;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
+import java.util.logging.Logger;
 import java.util.stream.StreamSupport;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.web.client.RestClientException;
+
 
 /**
  * Azure Functions with Time Trigger.
  */
 public class Function {
+    private Logger logger;
     private String baseUrl;
     private String storageConnectionString;
 
@@ -38,6 +39,7 @@ public class Function {
     private final String GRANT_TYPE = "refresh_token";
 
     public Function() {
+        this.logger = null;
         this.baseUrl = null;
         this.storageConnectionString = null;
     }
@@ -45,11 +47,12 @@ public class Function {
     @FunctionName("refreshtokenonpremise")
     public String run(@TimerTrigger(name = "keepAliveTrigger", schedule = "0 */2 * * * *") String timerInfo,
             final ExecutionContext context) {
-        context.getLogger().info("Java Timer trigger function executed at:" + LocalDateTime.now().toString());
+        this.logger = context.getLogger();
+        this.logger.info("Java Timer trigger function executed at:" + LocalDateTime.now().toString());
 
         this.getenv();
         if (storageConnectionString == null || baseUrl == null) {
-            context.getLogger().warning("Setting is not complete");
+            this.logger.warning("Setting is not complete");
             return Constants.MESSAGE_ERROR;
         }
 
@@ -69,30 +72,28 @@ public class Function {
             // Loop through the results, displaying information about the entity.
             StreamSupport.stream(cloudTable.execute(partitionQuery).spliterator(), true)
                     .map(t -> {
-                        context.getLogger()
-                                .info("Old Token -> PartitionKey: " + t.getPartitionKey()
-                                        + " - RowKey: " + t.getRowKey()
-                                        + " - AccessToken: " + t.getAccessToken()
-                                        + " - RefreshToken: " + t.getRefreshToken());
+                        this.logger.info("Old Token -> PartitionKey: " + t.getPartitionKey()
+                                + " - RowKey: " + t.getRowKey()
+                                + " - AccessToken: " + t.getAccessToken()
+                                + " - RefreshToken: " + t.getRefreshToken());
                         try {
-                            return getNewRefreshToken(t);
+                            TokenEntity tokenNew = getNewRefreshToken(t);
+                            this.logger.info("New Token -> PartitionKey: " + tokenNew.getPartitionKey()
+                                    + " - RowKey: " + tokenNew.getRowKey()
+                                    + " - AccessToken: " + tokenNew.getAccessToken()
+                                    + " - RefreshToken: " + tokenNew.getRefreshToken());
+                            return tokenNew;
                         } catch (RestClientException | KeyManagementException | KeyStoreException
                                 | NoSuchAlgorithmException e) {
-                            context.getLogger().warning("Error getting new refresh token: " + e.getMessage());
+                            this.logger.warning("Error getting new refresh token: " + e.getMessage());
                             return t;
                         }
                     })
                     .forEach(t -> {
                         if(StringUtils.isBlank(t.getAccessToken()) || StringUtils.isBlank(t.getRefreshToken())) {
-                            context.getLogger().warning("Ni el access token ni el refresh token pueden ser nulos, vacios o estar en blanco");
+                            this.logger.warning("Ni el access token ni el refresh token pueden ser nulos, vacios o estar en blanco");
                             return;  //No se procesa el nuevo TokenEntity
                         }
-
-                        context.getLogger()
-                                .info("New Token -> PartitionKey: " + t.getPartitionKey()
-                                        + " - RowKey: " + t.getRowKey()
-                                        + " - AccessToken: " + t.getAccessToken()
-                                        + " - RefreshToken: " + t.getRefreshToken());
 
                         // Create an operation to replace the entity.
                         TableOperation replaceEntity = TableOperation.replace(t);
@@ -101,11 +102,11 @@ public class Function {
                             // Submit the operation to the table service.
                             cloudTable.execute(replaceEntity);
                         } catch (StorageException e) {
-                            context.getLogger().warning("Error replacing table entity: " + e.getMessage());
+                            this.logger.warning("Error replacing table entity: " + e.getMessage());
                         }
                     });
         } catch (InvalidKeyException | URISyntaxException | StorageException e) {
-            context.getLogger().warning("Error processing tokens: " + e.getMessage());
+            this.logger.warning("Error processing tokens: " + e.getMessage());
             return Constants.MESSAGE_ERROR;
         }
         return Constants.MESSAGE_OK;
@@ -118,7 +119,7 @@ public class Function {
 
     private TokenEntity getNewRefreshToken(TokenEntity tokenEntity) throws RestClientException,
             KeyManagementException,KeyStoreException, NoSuchAlgorithmException {
-        RestClient client = new RestClientImpl();
+        RestClient client = new RestClientImpl(this.logger);
         TokenRequest request = TokenRequest.builder()
                 .clientId(tokenEntity.getPartitionKey())
                 .grantType(GRANT_TYPE)
@@ -126,11 +127,9 @@ public class Function {
                 .scope(SCOPE)
                 .build();
         TokenResponse response = client.callRefreshTokenAPI(this.baseUrl, request);
-        TokenEntity newTokenEntity = new TokenEntity();
-        newTokenEntity.setPartitionKey(tokenEntity.getPartitionKey());
-        newTokenEntity.setRowKey(tokenEntity.getRowKey());
-        newTokenEntity.setAccessToken(response.getAccessToken());
-        newTokenEntity.setRefreshToken(response.getRefreshToken());
+        TokenEntity newTokenEntity = tokenEntity.mutate();
+        newTokenEntity.setAccessToken(response.getAccess_token());
+        newTokenEntity.setRefreshToken(response.getRefresh_token());
         return newTokenEntity;
     }
 }

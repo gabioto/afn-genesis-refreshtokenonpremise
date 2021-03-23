@@ -33,4 +33,15 @@ public class TokenEntity extends TableServiceEntity{
       this.partitionKey = partitionKey;
       this.rowKey = rowKey;
     }
+
+    public TokenEntity mutate() {
+      TokenEntity newTokenEntity = new TokenEntity();
+      newTokenEntity.setAccessToken(this.getAccessToken());
+      newTokenEntity.setEtag(this.getEtag());
+      newTokenEntity.setPartitionKey(this.getPartitionKey());
+      newTokenEntity.setRefreshToken(this.getRefreshToken());
+      newTokenEntity.setRowKey(this.getRowKey());
+      newTokenEntity.setTimestamp(this.getTimestamp());
+      return newTokenEntity;
+    }
 }

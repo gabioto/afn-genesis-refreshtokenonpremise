@@ -1,17 +1,16 @@
 package com.tdp.afn.genesis.rest.impl;
 
+import com.tdp.afn.genesis.model.dto.TokenRequest;
+import com.tdp.afn.genesis.model.dto.TokenResponse;
+import com.tdp.afn.genesis.rest.RestClient;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-
+import java.util.logging.Logger;
 import javax.net.ssl.SSLContext;
-
-import com.tdp.afn.genesis.model.dto.TokenRequest;
-import com.tdp.afn.genesis.model.dto.TokenResponse;
-import com.tdp.afn.genesis.rest.RestClient;
-
+import lombok.RequiredArgsConstructor;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.TrustStrategy;
@@ -27,7 +26,10 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
+@RequiredArgsConstructor
 public class RestClientImpl implements RestClient{
+
+    private final Logger logger;
 
     @Override
     public TokenResponse callRefreshTokenAPI(String baseUrl,
@@ -42,11 +44,19 @@ public class RestClientImpl implements RestClient{
         body.add("grant_type",request.getGrantType());
 
         HttpEntity<MultiValueMap<String, String>> entityReq = new HttpEntity<>(body, headers);
-        return getRestTemplate().exchange(baseUrl,
+        TokenResponse tokenResponse =  getRestTemplate().exchange(baseUrl,
                 HttpMethod.POST,
                 entityReq,
                 TokenResponse.class)
                 .getBody();
+        this.logger.info("TokenResponse -> AccessToken: " + tokenResponse.getAccess_token()
+                + " - RefreshToken: " + tokenResponse.getRefresh_token()
+                + " - Scope: " + tokenResponse.getScope()
+                + " - TokenType: " + tokenResponse.getToken_type()
+                + " - ConsentedOn: " + tokenResponse.getConsented_on()
+                + " - ExpiresIn: " + tokenResponse.getExpires_in()
+                + " - RefreshTokenExpiresin: " + tokenResponse.getRefresh_token_expires_in());
+        return tokenResponse;
     }
 
     private RestTemplate getRestTemplate() throws KeyStoreException, NoSuchAlgorithmException, KeyManagementException {

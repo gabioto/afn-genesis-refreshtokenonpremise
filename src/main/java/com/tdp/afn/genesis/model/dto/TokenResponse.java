@@ -1,7 +1,5 @@
 package com.tdp.afn.genesis.model.dto;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -29,17 +27,11 @@ import lombok.ToString;
 @NoArgsConstructor
 @AllArgsConstructor
 public class TokenResponse {
-    @JsonProperty("token_type")
-    private String tokenType;
-    @JsonProperty("access_token")
-    private String accessToken;
-    @JsonProperty("expires_in")
-    private Long expiresIn;
-    @JsonProperty("consented_on")
-    private Long consentedOn;
+    private String token_type;
+    private String access_token;
+    private Long expires_in;
+    private Long consented_on;
     private String scope;
-    @JsonProperty("refresh_token")
-    private String refreshToken;
-    @JsonProperty("refresh_token_expires_in")
-    private Long refreshTokenExpiresin;
+    private String refresh_token;
+    private Long refresh_token_expires_in;
 }
