@@ -1,8 +1,7 @@
 package com.tdp.afn.genesis.model.dto;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
@@ -25,14 +24,13 @@ import lombok.ToString;
  * @version 1.0
  */
 @Getter
+@Builder
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
 public class TokenRequest {
-    @JsonProperty("client_id")
     String clientId;
-    @JsonProperty("grant_type")
     String grantType;
-    @JsonProperty("refresh_token")
     String refreshToken;
+    String scope;
 }

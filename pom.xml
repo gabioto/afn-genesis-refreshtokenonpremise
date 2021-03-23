@@ -14,6 +14,7 @@
         <functionAppName>refreshtokenonpremise</functionAppName>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <stagingDirectory>${project.build.directory}/azure-functions/${functionAppName}</stagingDirectory>
+        <spring.version>5.3.5</spring.version>
         <jackson.core.version>2.12.2</jackson.core.version>
         <azure-storage.version>8.6.6</azure-storage.version>
         <azure.functions.maven.plugin.version>1.9.2</azure.functions.maven.plugin.version>
@@ -35,16 +36,22 @@
         </dependency>
 
         <dependency>
-            <groupId>io.projectreactor.netty</groupId>
-            <artifactId>reactor-netty</artifactId>
-            <version>1.0.4</version>
-        </dependency>
-
-        <!--<dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-web</artifactId>
-            <version>5.3.4</version>
-        </dependency>-->
+            <version>${spring.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>4.5.13</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.12.0</version>
+        </dependency>
 
         <!-- Provide Scope -->
         <dependency>

@@ -10,9 +10,20 @@ import com.microsoft.azure.storage.table.CloudTableClient;
 import com.microsoft.azure.storage.table.TableOperation;
 import com.microsoft.azure.storage.table.TableQuery;
 import com.tdp.afn.genesis.model.dao.TokenEntity;
+import com.tdp.afn.genesis.model.dto.TokenRequest;
+import com.tdp.afn.genesis.model.dto.TokenResponse;
+import com.tdp.afn.genesis.rest.RestClient;
+import com.tdp.afn.genesis.rest.impl.RestClientImpl;
 import com.tdp.afn.genesis.util.Constants;
+
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.web.client.RestClientException;
+
 import java.net.URISyntaxException;
 import java.security.InvalidKeyException;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.util.stream.StreamSupport;
 
@@ -21,19 +32,19 @@ import java.util.stream.StreamSupport;
  */
 public class Function {
     private String baseUrl;
-    private ExecutionContext context;
     private String storageConnectionString;
+
+    private final String SCOPE = "scope1";
+    private final String GRANT_TYPE = "refresh_token";
 
     public Function() {
         this.baseUrl = null;
-        this.context = null;
         this.storageConnectionString = null;
     }
 
     @FunctionName("refreshtokenonpremise")
     public String run(@TimerTrigger(name = "keepAliveTrigger", schedule = "0 */2 * * * *") String timerInfo,
             final ExecutionContext context) {
-        this.context = context;
         context.getLogger().info("Java Timer trigger function executed at:" + LocalDateTime.now().toString());
 
         this.getenv();
@@ -60,15 +71,26 @@ public class Function {
                     .map(t -> {
                         context.getLogger()
                                 .info("Old Token -> PartitionKey: " + t.getPartitionKey()
-                                        + " - RowKey: " + t.getAccessToken()
+                                        + " - RowKey: " + t.getRowKey()
                                         + " - AccessToken: " + t.getAccessToken()
                                         + " - RefreshToken: " + t.getRefreshToken());
-                        return getNewRefreshToken(t);
+                        try {
+                            return getNewRefreshToken(t);
+                        } catch (RestClientException | KeyManagementException | KeyStoreException
+                                | NoSuchAlgorithmException e) {
+                            context.getLogger().warning("Error getting new refresh token: " + e.getMessage());
+                            return t;
+                        }
                     })
                     .forEach(t -> {
+                        if(StringUtils.isBlank(t.getAccessToken()) || StringUtils.isBlank(t.getRefreshToken())) {
+                            context.getLogger().warning("Ni el access token ni el refresh token pueden ser nulos, vacios o estar en blanco");
+                            return;  //No se procesa el nuevo TokenEntity
+                        }
+
                         context.getLogger()
                                 .info("New Token -> PartitionKey: " + t.getPartitionKey()
-                                        + " - RowKey: " + t.getAccessToken()
+                                        + " - RowKey: " + t.getRowKey()
                                         + " - AccessToken: " + t.getAccessToken()
                                         + " - RefreshToken: " + t.getRefreshToken());
 
@@ -94,8 +116,21 @@ public class Function {
         this.storageConnectionString = System.getenv("StorageConnection");
     }
 
-    private TokenEntity getNewRefreshToken(TokenEntity tokenEntity) {
-        this.context.getLogger().info("Request al API del refresh token");
-        return tokenEntity;
+    private TokenEntity getNewRefreshToken(TokenEntity tokenEntity) throws RestClientException,
+            KeyManagementException,KeyStoreException, NoSuchAlgorithmException {
+        RestClient client = new RestClientImpl();
+        TokenRequest request = TokenRequest.builder()
+                .clientId(tokenEntity.getPartitionKey())
+                .grantType(GRANT_TYPE)
+                .refreshToken(tokenEntity.getRefreshToken())
+                .scope(SCOPE)
+                .build();
+        TokenResponse response = client.callRefreshTokenAPI(this.baseUrl, request);
+        TokenEntity newTokenEntity = new TokenEntity();
+        newTokenEntity.setPartitionKey(tokenEntity.getPartitionKey());
+        newTokenEntity.setRowKey(tokenEntity.getRowKey());
+        newTokenEntity.setAccessToken(response.getAccessToken());
+        newTokenEntity.setRefreshToken(response.getRefreshToken());
+        return newTokenEntity;
     }
 }
