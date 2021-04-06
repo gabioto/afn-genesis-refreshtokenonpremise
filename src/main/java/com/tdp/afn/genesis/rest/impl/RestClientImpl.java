@@ -49,9 +49,7 @@ public class RestClientImpl implements RestClient{
                 entityReq,
                 TokenResponse.class)
                 .getBody();
-        this.logger.info("TokenResponse -> AccessToken: " + tokenResponse.getAccess_token()
-                + " - RefreshToken: " + tokenResponse.getRefresh_token()
-                + " - Scope: " + tokenResponse.getScope()
+        this.logger.info("TokenResponse -> " 
                 + " - TokenType: " + tokenResponse.getToken_type()
                 + " - ConsentedOn: " + tokenResponse.getConsented_on()
                 + " - ExpiresIn: " + tokenResponse.getExpires_in()

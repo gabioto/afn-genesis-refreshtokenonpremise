@@ -103,20 +103,13 @@ public class Function {
             // Loop through the results, displaying information about the entity.
             StreamSupport.stream(cloudTable.execute(partitionQuery).spliterator(), true)
                     .map(t -> {
-                        this.logger.info("Old Token -> PartitionKey: " + t.getPartitionKey()
-                                + " - RowKey: " + t.getRowKey()
-                                + " - AccessToken: " + t.getAccessToken()
-                                + " - RefreshToken: " + t.getRefreshToken());
                         TokenEntity tokenNew = t.mutate();
+                        this.logger.info("Processing clientid: " + t.getPartitionKey());
                         try {
                             TokenResponse response = getNewRefreshToken(t.getPartitionKey(),
                                     AESUtil.decrypt(this.algorithm, t.getRefreshToken(), key, IVPARAMETERSPEC));
                             tokenNew.setAccessToken(AESUtil.encrypt(this.algorithm, response.getAccess_token(), key, IVPARAMETERSPEC));
                             tokenNew.setRefreshToken(AESUtil.encrypt(this.algorithm, response.getRefresh_token(), key, IVPARAMETERSPEC));
-                            this.logger.info("New Token -> PartitionKey: " + tokenNew.getPartitionKey()
-                                    + " - RowKey: " + tokenNew.getRowKey()
-                                    + " - AccessToken: " + tokenNew.getAccessToken()
-                                    + " - RefreshToken: " + tokenNew.getRefreshToken());
                             return tokenNew;
                         } catch (RestClientException | KeyManagementException | KeyStoreException
                                 | NoSuchAlgorithmException | InvalidKeyException | NoSuchPaddingException
@@ -145,6 +138,7 @@ public class Function {
             this.logger.warning("Error processing tokens: " + e.getMessage());
             return Constants.MESSAGE_ERROR;
         }
+        this.logger.info("Java Timer trigger function finished.");
         return Constants.MESSAGE_OK;
     }
 
