@@ -14,9 +14,7 @@ import org.junit.jupiter.api.Test;
  * Unit test for Function class.
  */
 public class FunctionTest {
-    /**
-     * Unit test for HttpTriggerJava method.
-     */
+
     @Test
     public void caso_ok() throws Exception {
         // Setup
@@ -24,7 +22,7 @@ public class FunctionTest {
         doReturn(Logger.getGlobal()).when(context).getLogger();
 
         // Invoke
-        final String ret = new Function().run(null, /*null,*/ context);
+        final String ret = new Function().run(null, context);
 
         // Verify
         assertEquals(ret, "OK");

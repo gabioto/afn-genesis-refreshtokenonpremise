@@ -285,3 +285,6 @@ nbdist/
 .history
 
 # End of .gitignore
+
+.fake
+.ionide

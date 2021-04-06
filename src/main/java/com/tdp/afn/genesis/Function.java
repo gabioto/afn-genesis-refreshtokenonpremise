@@ -15,14 +15,25 @@ import com.tdp.afn.genesis.model.dto.TokenResponse;
 import com.tdp.afn.genesis.rest.RestClient;
 import com.tdp.afn.genesis.rest.impl.RestClientImpl;
 import com.tdp.afn.genesis.util.Constants;
+import com.tdp.genesis.core.security.aes.AESUtil;
+
 import java.net.URISyntaxException;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 import java.time.LocalDateTime;
 import java.util.logging.Logger;
 import java.util.stream.StreamSupport;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+import javax.crypto.SecretKey;
+import javax.crypto.spec.IvParameterSpec;
+
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.web.client.RestClientException;
 
@@ -31,34 +42,54 @@ import org.springframework.web.client.RestClientException;
  * Azure Functions with Time Trigger.
  */
 public class Function {
+    protected String salt;
+    protected String baseUrl;
+    protected String password;
+    protected String algorithm;
+    protected String tableName;
+    protected String storageConnection;
+
     private Logger logger;
-    private String baseUrl;
-    private String storageConnectionString;
 
     private final String SCOPE = "scope1";
     private final String GRANT_TYPE = "refresh_token";
 
+    private static IvParameterSpec IVPARAMETERSPEC = new IvParameterSpec(AESUtil.GENESIS_IVPARAMETER);
+
     public Function() {
+        this.salt = null;
         this.logger = null;
         this.baseUrl = null;
-        this.storageConnectionString = null;
+        this.password = null;
+        this.algorithm = null;
+        this.tableName = null;
+        this.storageConnection = null;
     }
 
     @FunctionName("refreshtokenonpremise")
-    public String run(@TimerTrigger(name = "keepAliveTrigger", schedule = "0 */2 * * * *") String timerInfo,
+    public String run(@TimerTrigger(name = "keepAliveTrigger", schedule = "%ScheduleTime%") String timerInfo,
             final ExecutionContext context) {
         this.logger = context.getLogger();
         this.logger.info("Java Timer trigger function executed at:" + LocalDateTime.now().toString());
 
         this.getenv();
-        if (storageConnectionString == null || baseUrl == null) {
+        if (this.isNotValidSetting()) {
             this.logger.warning("Setting is not complete");
+            return Constants.MESSAGE_ERROR;
+        }
+
+        SecretKey key;
+        try {
+            key = AESUtil.getKeyFromPassword(this.password, this.salt);
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
+            String msg = "Error generando el secret key de encriptación: " + e.getMessage();
+            this.logger.warning(msg);
             return Constants.MESSAGE_ERROR;
         }
 
         try {
             // Retrieve storage account from connection-string.
-            CloudStorageAccount storageAccount = CloudStorageAccount.parse(storageConnectionString);
+            CloudStorageAccount storageAccount = CloudStorageAccount.parse(storageConnection);
 
             // Create the table client.
             CloudTableClient tableClient = storageAccount.createCloudTableClient();
@@ -76,15 +107,20 @@ public class Function {
                                 + " - RowKey: " + t.getRowKey()
                                 + " - AccessToken: " + t.getAccessToken()
                                 + " - RefreshToken: " + t.getRefreshToken());
+                        TokenEntity tokenNew = t.mutate();
                         try {
-                            TokenEntity tokenNew = getNewRefreshToken(t);
+                            TokenResponse response = getNewRefreshToken(t.getPartitionKey(),
+                                    AESUtil.decrypt(this.algorithm, t.getRefreshToken(), key, IVPARAMETERSPEC));
+                            tokenNew.setAccessToken(AESUtil.encrypt(this.algorithm, response.getAccess_token(), key, IVPARAMETERSPEC));
+                            tokenNew.setRefreshToken(AESUtil.encrypt(this.algorithm, response.getRefresh_token(), key, IVPARAMETERSPEC));
                             this.logger.info("New Token -> PartitionKey: " + tokenNew.getPartitionKey()
                                     + " - RowKey: " + tokenNew.getRowKey()
                                     + " - AccessToken: " + tokenNew.getAccessToken()
                                     + " - RefreshToken: " + tokenNew.getRefreshToken());
                             return tokenNew;
                         } catch (RestClientException | KeyManagementException | KeyStoreException
-                                | NoSuchAlgorithmException e) {
+                                | NoSuchAlgorithmException | InvalidKeyException | NoSuchPaddingException
+                                | InvalidAlgorithmParameterException | BadPaddingException | IllegalBlockSizeException e) {
                             this.logger.warning("Error getting new refresh token: " + e.getMessage());
                             return t;
                         }
@@ -113,23 +149,32 @@ public class Function {
     }
 
     private void getenv() {
-        this.baseUrl = System.getenv("OnPremiseUrl");
-        this.storageConnectionString = System.getenv("StorageConnection");
+        this.salt = System.getenv("Salt");
+        this.baseUrl = System.getenv("BaseUrl");
+        this.password = System.getenv("Password");
+        this.algorithm = System.getenv("Algorithm");
+        this.tableName = System.getenv("TableName");
+        this.storageConnection = System.getenv("StorageConnection");
     }
 
-    private TokenEntity getNewRefreshToken(TokenEntity tokenEntity) throws RestClientException,
+    private TokenResponse getNewRefreshToken(String clientId, String refreshToken) throws RestClientException,
             KeyManagementException,KeyStoreException, NoSuchAlgorithmException {
         RestClient client = new RestClientImpl(this.logger);
         TokenRequest request = TokenRequest.builder()
-                .clientId(tokenEntity.getPartitionKey())
+                .clientId(clientId)
                 .grantType(GRANT_TYPE)
-                .refreshToken(tokenEntity.getRefreshToken())
+                .refreshToken(refreshToken)
                 .scope(SCOPE)
                 .build();
-        TokenResponse response = client.callRefreshTokenAPI(this.baseUrl, request);
-        TokenEntity newTokenEntity = tokenEntity.mutate();
-        newTokenEntity.setAccessToken(response.getAccess_token());
-        newTokenEntity.setRefreshToken(response.getRefresh_token());
-        return newTokenEntity;
+        return client.callRefreshTokenAPI(this.baseUrl, request);
+    }
+
+    private boolean isNotValidSetting() {
+        return StringUtils.isBlank(this.salt) ||
+                StringUtils.isBlank(this.baseUrl) ||
+                StringUtils.isBlank(this.password) ||
+                StringUtils.isBlank(this.algorithm) ||
+                StringUtils.isBlank(this.tableName) ||
+                StringUtils.isBlank(this.storageConnection);
     }
 }

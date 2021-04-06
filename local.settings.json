@@ -4,6 +4,11 @@
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
     "FUNCTIONS_WORKER_RUNTIME": "java",
     "StorageConnection" : "DefaultEndpointsProtocol=https;AccountName=aegastoragedemo;AccountKey=itFS3z6swYZwD9Pfa3ZzWbrfXPDifQ8uESnurrm8qNG1uUy21urlmgERzEyAJZ/kwEvw7uwNU7DHQ5ULRhkSdA==;EndpointSuffix=core.windows.net",
-    "OnPremiseUrl" : "https://apisd.telefonica.com.pe/vp-tecnologia/bss/public/oauth2/token"
+    "BaseUrl" : "https://apisd.telefonica.com.pe/vp-tecnologia/bss/public/oauth2/token",
+    "ScheduleTime" : "0 */2 * * * *",
+    "TableName" : "token",
+    "Salt" : "LYDGCsdK",
+    "Password" : "of@xbw1C`#)iTWgePFe~",
+    "Algorithm" : "AES/CBC/PKCS5Padding"
   }
 }
