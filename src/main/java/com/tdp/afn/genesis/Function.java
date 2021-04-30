@@ -15,7 +15,7 @@ import com.tdp.afn.genesis.model.dto.TokenResponse;
 import com.tdp.afn.genesis.rest.RestClient;
 import com.tdp.afn.genesis.rest.impl.RestClientImpl;
 import com.tdp.afn.genesis.util.Constants;
-import com.tdp.genesis.core.security.aes.AESUtil;
+import com.tdp.genesis.core.security.aes.AesUtil;
 
 import java.net.URISyntaxException;
 import java.security.InvalidAlgorithmParameterException;
@@ -32,7 +32,6 @@ import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
-import javax.crypto.spec.IvParameterSpec;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.web.client.RestClientException;
@@ -53,8 +52,6 @@ public class Function {
 
     private final String SCOPE = "scope1";
     private final String GRANT_TYPE = "refresh_token";
-
-    private static IvParameterSpec IVPARAMETERSPEC = new IvParameterSpec(AESUtil.GENESIS_IVPARAMETER);
 
     public Function() {
         this.salt = null;
@@ -80,7 +77,7 @@ public class Function {
 
         SecretKey key;
         try {
-            key = AESUtil.getKeyFromPassword(this.password, this.salt);
+            key = AesUtil.getSecretKeyFromPassword(this.password, this.salt);
         } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
             String msg = "Error generando el secret key de encriptación: " + e.getMessage();
             this.logger.warning(msg);
@@ -107,9 +104,9 @@ public class Function {
                         this.logger.info("Processing clientid: " + t.getPartitionKey());
                         try {
                             TokenResponse response = getNewRefreshToken(t.getPartitionKey(),
-                                    AESUtil.decrypt(this.algorithm, t.getRefreshToken(), key, IVPARAMETERSPEC));
-                            tokenNew.setAccessToken(AESUtil.encrypt(this.algorithm, response.getAccess_token(), key, IVPARAMETERSPEC));
-                            tokenNew.setRefreshToken(AESUtil.encrypt(this.algorithm, response.getRefresh_token(), key, IVPARAMETERSPEC));
+                                    AesUtil.decryptString(t.getRefreshToken(), key));
+                            tokenNew.setAccessToken(AesUtil.encryptString(response.getAccess_token(), key));
+                            tokenNew.setRefreshToken(AesUtil.encryptString(response.getRefresh_token(), key));
                             return tokenNew;
                         } catch (RestClientException | KeyManagementException | KeyStoreException
                                 | NoSuchAlgorithmException | InvalidKeyException | NoSuchPaddingException
