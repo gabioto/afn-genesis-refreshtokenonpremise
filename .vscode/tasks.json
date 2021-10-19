@@ -9,10 +9,10 @@
 			"options": {
 				"cwd": "${workspaceFolder}/target/azure-functions/refreshtokenonpremise"
 			},
-			"dependsOn": "package"
+			"dependsOn": "package (functions)"
 		},
 		{
-			"label": "package",
+			"label": "package (functions)",
 			"command": "mvn clean package",
 			"type": "shell",
 			"group": {
