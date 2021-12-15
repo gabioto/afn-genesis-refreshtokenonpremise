@@ -18,6 +18,7 @@
         <!-- Dependency versions -->
         <azure.functions.java.library.version>1.4.2</azure.functions.java.library.version>
         <checkstyle.version>8.45.1</checkstyle.version>
+        <slf4j-api.version>2.16.0</slf4j-api.version>
 
         <!-- Plugins -->
         <azure.functions.maven.plugin.version>1.13.0</azure.functions.maven.plugin.version>
@@ -120,6 +121,18 @@
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <version>${jackson.version}</version>
+        </dependency>
+        
+        <!--<dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j-impl</artifactId>
+            <version>${slf4j-api.version}</version>
+        </dependency>-->
+        
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-to-slf4j</artifactId>
+            <version>${slf4j-api.version}</version>
         </dependency>
       
         <!-- Provide Scope -->
